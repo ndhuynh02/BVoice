@@ -4,14 +4,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@drawable/gradient_background">
 
     <ImageView
-        android:id="@+id/imageView5"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:src="@drawable/ily"
-        android:scaleType="centerCrop"/>
+        android:layout_width="650dp"
+        android:layout_height="650dp"
+        android:src="@drawable/circle"
+        android:scaleType="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <LinearLayout
         android:id="@+id/linearLayout"
@@ -24,20 +28,37 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <Button
-            android:id="@+id/translate_button"
+        <ImageView
+            android:id="@+id/bvoiceIcon"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="50sp"
-            android:text="@string/translateBtn"/>
+            android:layout_height="80dp"
+            android:src="@drawable/bvoice"
+            android:layout_marginBottom="150dp"/>
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/translate_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="40sp"
+            android:text="@string/translateBtn"
+            android:background="@drawable/button_gradient_border"
+            android:textColor="@color/black"
+            android:layout_marginEnd="30dp"
+            android:layout_marginStart="30dp"
+            android:fontFamily="sans-serif"/>
+
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/study_button"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
-            android:textSize="50sp"
-            android:text="@string/studyBtn" />
+            android:textSize="40sp"
+            android:text="@string/studyBtn"
+            android:background="@drawable/button_gradient_border"
+            android:textColor="@color/black"
+            android:layout_marginEnd="30dp"
+            android:layout_marginStart="30dp"
+            android:fontFamily="sans-serif"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
