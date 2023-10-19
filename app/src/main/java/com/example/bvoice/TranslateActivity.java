@@ -25,7 +25,12 @@ import com.google.mediapipe.glutil.EglManager;
 
 public class TranslateActivity extends AppCompatActivity {
     private ImageButton gobackBtn;
+    private ImageButton startRecordBtn;
+    private boolean isRecording = false;
+    private ImageButton flipCamera;
+    private boolean cameraFacingFront = false;
     private static final String TAG = "TranslateActivity";
+    private ViewGroup viewGroup;
 
     // Flips the camera-preview frames vertically by default, before sending them into FrameProcessor
     // to be processed in a MediaPipe graph, and flips the processed frames back when they are
@@ -108,6 +113,29 @@ public class TranslateActivity extends AppCompatActivity {
                 backToMenu();
             }
         });
+
+        startRecordBtn = findViewById(R.id.record_btn);
+        startRecordBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                isRecording = !isRecording;
+                int record_btn_style = isRecording ? R.drawable.stop_record : R.drawable.start_record;
+                startRecordBtn.setImageResource(record_btn_style);
+            }
+        });
+
+        flipCamera = findViewById(R.id.flip_camera);
+        flipCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                cameraFacingFront = !cameraFacingFront;
+
+//                viewGroup.removeView(previewDisplayView);
+//                setupPreviewDisplayView();
+//                onPause();
+//                onResume();
+            }
+        });
     }
 
     // Slide animation when gobackBtn is clicked
@@ -167,7 +195,7 @@ public class TranslateActivity extends AppCompatActivity {
                     onCameraStarted(surfaceTexture);
                 });
         CameraHelper.CameraFacing cameraFacing =
-                applicationInfo.metaData.getBoolean("cameraFacingFront", false)
+                    cameraFacingFront
                         ? CameraHelper.CameraFacing.FRONT
                         : CameraHelper.CameraFacing.BACK;
         cameraHelper.startCamera(
@@ -198,7 +226,7 @@ public class TranslateActivity extends AppCompatActivity {
 
     private void setupPreviewDisplayView() {
         previewDisplayView.setVisibility(View.GONE);
-        ViewGroup viewGroup = findViewById(R.id.preview_display_layout);
+        viewGroup = findViewById(R.id.preview_display_layout);
         viewGroup.addView(previewDisplayView);
 
         previewDisplayView

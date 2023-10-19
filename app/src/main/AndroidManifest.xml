@@ -15,20 +15,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BVoice">
         <activity
+            android:name=".StudyActivity"
+            android:exported="false" />
+        <activity
             android:name=".TranslateActivity"
             android:exported="false" />
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <meta-data
-            android:name="cameraFacingFront"
-            android:value="false" />
+        </activity> <!-- <meta-data -->
+        <!-- android:name="cameraFacingFront" -->
+        <!-- android:value="false" /> -->
         <meta-data
             android:name="binaryGraphName"
             android:value="holistic_tracking_gpu.binarypb" />

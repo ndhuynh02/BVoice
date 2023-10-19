@@ -10,7 +10,7 @@
     <ImageView
         android:layout_width="650dp"
         android:layout_height="650dp"
-        android:src="@drawable/circle"
+        android:src="@drawable/solid_circle"
         android:scaleType="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

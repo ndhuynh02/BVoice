@@ -23,8 +23,8 @@ public class MainActivity extends AppCompatActivity {
         translateBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                translateBtn.setBackgroundResource(R.drawable.button_gradient);
-                translateBtn.setTextColor(getColor(R.color.white));
+//                translateBtn.setBackgroundResource(R.drawable.button_gradient);
+//                translateBtn.setTextColor(getColor(R.color.white));
                 openCamera();
             }
         });
@@ -45,6 +45,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        studyBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                studyBtn.setBackgroundResource(R.drawable.button_gradient);
+//                studyBtn.setTextColor(getColor(R.color.white));
+                openStudy();
+            }
+        });
         studyBtn.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -66,5 +74,11 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, TranslateActivity.class);
         startActivity(intent);
         overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+    }
+
+    private void openStudy() {
+        Intent intent = new Intent(this, StudyActivity.class);
+        startActivity(intent);
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 }
