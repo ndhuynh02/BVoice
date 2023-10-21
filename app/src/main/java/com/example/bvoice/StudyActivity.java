@@ -60,5 +60,11 @@ public class StudyActivity extends AppCompatActivity implements AdapterView.OnIt
         TextView selectedWord = (TextView) adapterView.getChildAt(i);
         selectedWord.setTextColor(getColor(R.color.white));
         selectedWord.setBackgroundResource(R.drawable.button_gradient);
+
+        PracticeActivity.word = selectedWord.getText().toString();
+
+        Intent intent = new Intent(this, PracticeActivity.class);
+        startActivity(intent);
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 }
