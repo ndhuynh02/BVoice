@@ -16,6 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BVoice">
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+        <activity
             android:name=".fragment.PracticeFragment"
             android:exported="false"
             tools:ignore="Instantiatable" />
