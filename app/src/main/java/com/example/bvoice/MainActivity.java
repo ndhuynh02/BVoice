@@ -1,22 +1,50 @@
 package com.example.bvoice;
 
+import static com.example.bvoice.ModelClass.generateRandomArray;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+
+//import org.tensorflow.lite.Interpreter;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
     private AppCompatButton translateBtn;
     private AppCompatButton studyBtn;
 
-    @Override
+    private ModelClass model;
+
+
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        try{
+//            Interpreter.Options options = new Interpreter.Options();
+
+            model = new ModelClass(getAssets(),"model.tflite","app/src/main/assets/sign_to_prediction_index_map.json");
+            System.out.println("HIIIIIIIIIIIIIIIIIIIIIi");
+            Log.d("MainActivity","Model is successfully loaded");
+        } catch (IOException e) {
+            Log.d("MainActivity", "Getting some error");
+            e.printStackTrace();
+        }
+        float[][][] inputArray = generateRandomArray(25,543,3);
+//        float[] output = new float[250];
+//        model.interpreter.run(inputArray,output);
+        String prediction = new String();
+        prediction = model.predict(inputArray);
+//        System.out.println(output);
+        Log.d("NHUTHAO_mainactivity",  prediction);
         translateBtn = findViewById(R.id.translate_button);
         studyBtn = findViewById(R.id.study_button);
 

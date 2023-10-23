@@ -25,7 +25,6 @@ import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.glutil.EglManager;
 
-import java.util.List;
 
 public class TranslateActivity extends AppCompatActivity {
     private ImageButton gobackBtn;
