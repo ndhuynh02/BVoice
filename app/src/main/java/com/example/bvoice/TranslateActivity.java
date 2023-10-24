@@ -5,8 +5,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.util.Log;
 import android.util.Size;
 import android.view.SurfaceHolder;
@@ -15,13 +13,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.mediapipe.components.CameraHelper;
 import com.google.mediapipe.components.CameraXPreviewHelper;
 import com.google.mediapipe.components.ExternalTextureConverter;
 import com.google.mediapipe.components.FrameProcessor;
 import com.google.mediapipe.components.PermissionHelper;
+import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.framework.AndroidAssetUtil;
+import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.glutil.EglManager;
+
+import java.util.List;
 
 public class TranslateActivity extends AppCompatActivity {
     private ImageButton gobackBtn;
@@ -97,7 +101,7 @@ public class TranslateActivity extends AppCompatActivity {
                         applicationInfo.metaData.getString("binaryGraphName"),
                         applicationInfo.metaData.getString("inputVideoStreamName"),
                         applicationInfo.metaData.getString("outputVideoStreamName")
-                        );
+                );
 
         processor
                 .getVideoSurfaceOutput()
@@ -161,7 +165,28 @@ public class TranslateActivity extends AppCompatActivity {
         converter.setConsumer(processor);
         if (PermissionHelper.cameraPermissionsGranted(this)) {
             startCamera();
+            setupFrameProcessorCallback();
         }
+    }
+
+    private void setupFrameProcessorCallback() {
+        Log.d(TAG, "Setting up frame processor callback");
+        processor.addPacketCallback(
+                "left_hand_landmarks",
+                (packet) -> {
+                    try {
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+
+                        Log.d(TAG, "number of left hand landmarks: " + landmarksList.getLandmarkCount());
+                        for (int i = 0; i < landmarksList.getLandmarkCount(); i++) {
+                            Log.d(TAG, "landmark " + i + ": " + landmarksList.getLandmark(i));
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing left_hand_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
     }
 
     @Override
@@ -195,7 +220,7 @@ public class TranslateActivity extends AppCompatActivity {
                     onCameraStarted(surfaceTexture);
                 });
         CameraHelper.CameraFacing cameraFacing =
-                    cameraFacingFront
+                cameraFacingFront
                         ? CameraHelper.CameraFacing.FRONT
                         : CameraHelper.CameraFacing.BACK;
         cameraHelper.startCamera(
