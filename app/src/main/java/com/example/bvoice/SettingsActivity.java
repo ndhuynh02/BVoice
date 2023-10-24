@@ -8,10 +8,14 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.Toast;
 
 public class SettingsActivity extends AppCompatActivity {
+    private Switch showKeypointSwitch;
+
     ImageView exitBtn;
 
     String [] SignLanguage = {"American", "Vietnamese"};
@@ -55,6 +59,14 @@ public class SettingsActivity extends AppCompatActivity {
                 backToMenu();
             }
         });
+
+        showKeypointSwitch = findViewById(R.id.show_keypoints_switch);
+        showKeypointSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                TranslateActivity.isShowingKeypoints = b;
+            }
+        });
     }
 
     private void backToMenu() {
@@ -68,5 +80,11 @@ public class SettingsActivity extends AppCompatActivity {
     public void finish() {
         super.finish();
         overridePendingTransition(R.anim.slide_in_top, R.anim.slide_out_bottom);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        showKeypointSwitch.setChecked(TranslateActivity.isShowingKeypoints);
     }
 }

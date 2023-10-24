@@ -28,6 +28,7 @@ import com.google.mediapipe.glutil.EglManager;
 import java.util.List;
 
 public class TranslateActivity extends AppCompatActivity {
+    public static boolean isShowingKeypoints = true;
     private ImageButton gobackBtn;
     private ImageButton startRecordBtn;
     private boolean isRecording = false;
@@ -100,7 +101,7 @@ public class TranslateActivity extends AppCompatActivity {
                         eglManager.getNativeContext(),
                         applicationInfo.metaData.getString("binaryGraphName"),
                         applicationInfo.metaData.getString("inputVideoStreamName"),
-                        applicationInfo.metaData.getString("outputVideoStreamName")
+                        applicationInfo.metaData.getString(isShowingKeypoints ? "outputVideoStreamName" : "inputVideoStreamName")
                 );
 
         processor

@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 
 import com.example.bvoice.R;
+import com.example.bvoice.TranslateActivity;
 import com.google.mediapipe.components.CameraHelper;
 import com.google.mediapipe.components.CameraXPreviewHelper;
 import com.google.mediapipe.components.ExternalTextureConverter;
@@ -100,7 +101,7 @@ public class PracticeFragment extends Fragment {
                         eglManager.getNativeContext(),
                         applicationInfo.metaData.getString("binaryGraphName"),
                         applicationInfo.metaData.getString("inputVideoStreamName"),
-                        applicationInfo.metaData.getString("outputVideoStreamName")
+                        applicationInfo.metaData.getString(TranslateActivity.isShowingKeypoints ? "outputVideoStreamName" : "inputVideoStreamName")
                 );
 
         processor

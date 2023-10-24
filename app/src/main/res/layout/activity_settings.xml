@@ -62,6 +62,7 @@
                         android:layout_centerVertical="true"/>
 
                     <Switch
+                        android:id="@+id/show_keypoints_switch"
                         android:layout_width="50dp"
                         android:layout_height="48dp"
                         android:layout_alignParentEnd="true"
