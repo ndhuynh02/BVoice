@@ -6,12 +6,9 @@
     tools:context=".fragment.LearnFragment"
     android:background="@color/white">
 
-    <TextView
+    <VideoView
+        android:id="@+id/videoView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Nothing to see here"
-        android:textSize="50dp"
-        android:textColor="@color/black"
-        android:gravity="center"/>
+        android:layout_height="wrap_content"/>
 
 </FrameLayout>

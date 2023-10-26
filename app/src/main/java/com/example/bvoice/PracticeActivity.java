@@ -14,7 +14,7 @@ import com.google.android.material.tabs.TabLayout;
 public class PracticeActivity extends AppCompatActivity {
     private ImageButton gobackBtn;
     private TextView studyingWord;
-    protected static String word = "Animal";
+    public static String word = "Animal";
 
     TabLayout tabLayout;
     ViewPager2 viewPager2;
