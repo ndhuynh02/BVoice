@@ -18,19 +18,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 
 public class StudyActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
     private ImageButton gobackBtn;
     private ListView vocabList;
 
-    String [] vocabulary;
-    int intCount = 0;
-
-    InputStream inputStreamCounter;
-    BufferedReader bufferedReaderCounter;
-
-    InputStream inputStreamLoader;
-    BufferedReader bufferedReaderLoader;
+    ArrayList<String> vocabulary = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,32 +40,14 @@ public class StudyActivity extends AppCompatActivity implements AdapterView.OnIt
             }
         });
 
-        // counter
-        inputStreamCounter = this.getResources().openRawResource(R.raw.vocab_list);
-        bufferedReaderCounter = new BufferedReader(new InputStreamReader(inputStreamCounter));
-
-        // loader
-        inputStreamLoader = this.getResources().openRawResource(R.raw.vocab_list);
-        bufferedReaderLoader = new BufferedReader(new InputStreamReader(inputStreamLoader));
-
-        // Count # of rows/lines in a file
-        try {
-            while (bufferedReaderCounter.readLine() != null) {
-                intCount++;
+        Field[] drawables = R.raw.class.getFields();
+        for (Field f : drawables) {
+            try {
+                String word = f.getName().replace("_", " ");
+                vocabulary.add(word.substring(0, 1).toUpperCase() + word.substring(1));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        vocabulary = new String[intCount];
-        // load rows or lines into array
-        try {
-            for (int i = 0; i < intCount; i++) {
-                String line = bufferedReaderLoader.readLine();
-                vocabulary[i] = line.substring(0, 1).toUpperCase() + line.substring(1);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
         ArrayAdapter<String> vocabAdapter = new ArrayAdapter<String>(this, R.layout.list_item, vocabulary);

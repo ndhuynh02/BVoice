@@ -50,7 +50,7 @@ public class LearnFragment extends Fragment {
     }
 
     private static int getRawResId(String resName) {
-        resName = resName.toLowerCase();
+        resName = resName.toLowerCase().replace(" ", "_");
         Class<?> c = R.raw.class;
         try {
             Field idField = c.getDeclaredField(resName);
