@@ -39,7 +39,6 @@ public class ModelClass {
     // store all label
     private List<String> labelList;
 
-//    private Map<String, String> s2p_map = new HashMap<>();
     private Map<Integer, String> p2s_map ;
     private float[] output = new float[250];
 
@@ -63,11 +62,7 @@ public class ModelClass {
 
     }
 
-    //TODO: CREATE P2M and M2P
-//    @RequiresApi(api = Build.VERSION_CODES.O)
 
-
-//    @RequiresApi(api = Build.VERSION_CODES.O)
     private void readJsonFile(AssetManager assetManager,String filePath) throws IOException {
 //         = getAssets();
         InputStream inputStream = assetManager.open(filePath);
@@ -87,15 +82,11 @@ public class ModelClass {
         for (String pair : pairs) {
             String[] keyValue = pair.split(": ");
 
-
-
-
             String key_str = keyValue[1].trim().replaceAll("\"", "").replace("{", "").replace("}", "");
             String value = keyValue[0].trim().replaceAll("\"", "").replace("{", "").replace("}", "").toLowerCase();
 
             int key = Integer.parseInt(key_str);
             p2s_map.put(key, value);
-//            Log.d("NHUTHAO_result", p2s_map.toString());
         }
 
         inputStream.close();
