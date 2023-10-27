@@ -5,18 +5,33 @@ import androidx.appcompat.widget.AppCompatButton;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity {
+    public static ModelClass model;
     private AppCompatButton translateBtn;
     private AppCompatButton studyBtn;
     private AppCompatButton settingsBtn;
+
+    private String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        try {
+            model = new ModelClass(getAssets(), "model.tflite", "app/src/main/assets/sign_to_prediction_index_map.json");
+            System.out.println("HIIIIIIIIIIIIIIIIIIIIIi");
+            Log.d(TAG, "Model is successfully loaded");
+        } catch (IOException e) {
+            Log.d(TAG, "Getting some error");
+            e.printStackTrace();
+        }
 
         translateBtn = findViewById(R.id.translate_button);
         studyBtn = findViewById(R.id.study_button);

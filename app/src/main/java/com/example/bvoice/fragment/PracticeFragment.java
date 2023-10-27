@@ -17,6 +17,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
+import com.example.bvoice.MainActivity;
+import com.example.bvoice.ModelClass;
 import com.example.bvoice.R;
 import com.example.bvoice.TranslateActivity;
 import com.google.mediapipe.components.CameraHelper;
@@ -27,9 +29,11 @@ import com.google.mediapipe.components.PermissionHelper;
 import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.glutil.EglManager;
 
-public class PracticeFragment extends Fragment {
-    private ImageButton gobackBtn;
+import java.util.ArrayList;
 
+public class PracticeFragment extends Fragment {
+    private ArrayList<String> keywords = new ArrayList<>();
+    private ImageButton gobackBtn;
     private ImageButton startRecordBtn;
     private boolean isRecording = false;
     private ImageButton flipCamera;
@@ -80,6 +84,8 @@ public class PracticeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_practice, container, false);
+
+        startCollectingKeypoints();
 
         try {
             applicationInfo =
@@ -210,5 +216,28 @@ public class PracticeFragment extends Fragment {
                                 processor.getVideoSurfaceOutput().setSurface(null);
                             }
                         });
+    }
+
+    private void startCollectingKeypoints() {
+        CollectKeypointsRunnable runnable = new CollectKeypointsRunnable();
+        new Thread(runnable).start();
+    }
+
+    class CollectKeypointsRunnable implements Runnable {
+        @Override
+        public void run() {
+            for (int i = 0; i < 10; i++) {
+                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
+                String prediction = MainActivity.model.predict(inputArray);
+                Log.d("NHUTHAO_mainactivity", prediction);
+                keywords.add(prediction);
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 }

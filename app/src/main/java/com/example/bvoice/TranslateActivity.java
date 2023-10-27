@@ -32,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +45,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class TranslateActivity extends AppCompatActivity {
+    private ArrayList<String> keywords = new ArrayList<>();
     public static final MediaType JSON
             = MediaType.get("application/json; charset=utf-8");
     static OkHttpClient client = new OkHttpClient.Builder()
@@ -151,7 +153,17 @@ public class TranslateActivity extends AppCompatActivity {
                 startRecordBtn.setImageResource(record_btn_style);
 
                 if (!isRecording) {
-                    callChatGPTAPI(new String[]{"Mom", "brownies", "kitchen"});
+                    callChatGPTAPI(keywords);
+                    Log.d("Keyword list", keywords.toString());
+                    keywords.clear();
+                } else {
+//                    for (int i = 0; i < 10; i++) {
+//                        float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
+//                        String prediction = model.predict(inputArray);
+//                        Log.d("NHUTHAO_mainactivity", prediction);
+//                        keywords.add(prediction);
+//                    }
+                    startCollectingKeypoints();
                 }
             }
         });
@@ -168,6 +180,11 @@ public class TranslateActivity extends AppCompatActivity {
 //                onResume();
             }
         });
+    }
+
+    private void startCollectingKeypoints() {
+        CollectKeypointsRunnable runnable = new CollectKeypointsRunnable();
+        new Thread(runnable).start();
     }
 
     public void addSubtitle(String sentence) {
@@ -312,7 +329,7 @@ public class TranslateActivity extends AppCompatActivity {
                         });
     }
 
-    private void callChatGPTAPI(String[] question) {
+    private void callChatGPTAPI(ArrayList<String> question) {
         //okhttp
 //        messageList.add(new Message("Typing... ",Message.SENT_BY_BOT));
 
@@ -323,7 +340,7 @@ public class TranslateActivity extends AppCompatActivity {
             JSONArray messageArr = new JSONArray();
             JSONObject obj = new JSONObject();
             obj.put("role", "user");
-            obj.put("content", "Transfer these keywords extracted from ASL into a complete text sentence: " + Arrays.toString(question) + ". Provide only the sentence");
+            obj.put("content", "Transfer these keywords extracted from ASL into a complete text sentence: " + question.toString() + ". Provide only the sentence");
             messageArr.put(obj);
 
             jsonBody.put("messages", messageArr);
@@ -367,5 +384,23 @@ public class TranslateActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    class CollectKeypointsRunnable implements Runnable {
+        @Override
+        public void run() {
+            while (isRecording) {
+                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
+                String prediction = MainActivity.model.predict(inputArray);
+                Log.d("NHUTHAO_mainactivity", prediction);
+                keywords.add(prediction);
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 }
