@@ -5,6 +5,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
 import android.view.SurfaceHolder;
@@ -74,6 +76,13 @@ public class TranslateActivity extends AppCompatActivity {
     // ApplicationInfo for retrieving metadata defined in the manifest.
     private ApplicationInfo applicationInfo;
 
+    int num_frame = 10; // Change this to the desired number of frames
+    int num_left_hand_landmarks = 21;
+    int num_coordinates = 3;
+
+    // Create the 3D array
+    float[][][] leftHandArray = new float[num_frame][num_left_hand_landmarks][num_coordinates];
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -132,11 +141,6 @@ public class TranslateActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 cameraFacingFront = !cameraFacingFront;
-
-//                viewGroup.removeView(previewDisplayView);
-//                setupPreviewDisplayView();
-//                onPause();
-//                onResume();
             }
         });
     }
@@ -164,23 +168,116 @@ public class TranslateActivity extends AppCompatActivity {
         converter.setConsumer(processor);
         if (PermissionHelper.cameraPermissionsGranted(this)) {
             startCamera();
-            setupFrameProcessorCallback();
+            setupLeftHandCallback();
+            setupRightHandCallback();
+            setupPoseCallback();
+            setupFaceCallback();
         }
     }
+    private void setupFaceCallback() {
+        Log.d(TAG, "Setting up face callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "no face landmarks");
+            }
+        };
 
-    private void setupFrameProcessorCallback() {
-        Log.d(TAG, "Setting up frame processor callback");
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        processor.addPacketCallback(
+                "face_landmarks",
+                (packet) -> {
+                    try {
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                        Log.d(TAG, "number of face landmarks: " + landmarksList.getLandmarkCount());
+
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing right_hand_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void setupRightHandCallback() {
+        Log.d(TAG, "Setting up right hand callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "no right hand landmarks");
+            }
+        };
+
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        processor.addPacketCallback(
+                "right_hand_landmarks",
+                (packet) -> {
+                    try {
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                        Log.d(TAG, "number of right hand landmarks: " + landmarksList.getLandmarkCount());
+
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing right_hand_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void setupPoseCallback() {
+        Log.d(TAG, "Setting up pose callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "no pose landmarks");
+            }
+        };
+
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        processor.addPacketCallback(
+                "pose_landmarks",
+                (packet) -> {
+                    try {
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                        Log.d(TAG, "number of pose landmarks: " + landmarksList.getLandmarkCount());
+
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing left_hand_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void setupLeftHandCallback() {
+        Log.d(TAG, "Setting up left hand callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "no left hand landmarks");
+            }
+        };
+
+        Handler handler = new Handler(Looper.getMainLooper());
+
         processor.addPacketCallback(
                 "left_hand_landmarks",
                 (packet) -> {
                     try {
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-
                         Log.d(TAG, "number of left hand landmarks: " + landmarksList.getLandmarkCount());
-                        for (int i = 0; i < landmarksList.getLandmarkCount(); i++) {
-                            Log.d(TAG, "landmark " + i + ": " + landmarksList.getLandmark(i));
-                        }
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
                     } catch (Exception e) {
                         Log.e(TAG, "accessing left_hand_landmarks failed: " + e.getMessage());
                         e.printStackTrace();
