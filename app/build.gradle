@@ -50,4 +50,7 @@ dependencies {
     implementation "androidx.camera:camera-core:$camerax_version"
     implementation "androidx.camera:camera-camera2:$camerax_version"
     implementation "androidx.camera:camera-lifecycle:$camerax_version"
+
+    // okhttp for requesting chatgpt
+    implementation "com.squareup.okhttp3:okhttp:4.11.0"
 }

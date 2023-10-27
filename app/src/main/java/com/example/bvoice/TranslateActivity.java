@@ -12,7 +12,9 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.mediapipe.components.CameraHelper;
@@ -25,9 +27,29 @@ import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.glutil.EglManager;
 
-import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class TranslateActivity extends AppCompatActivity {
+    public static final MediaType JSON
+            = MediaType.get("application/json; charset=utf-8");
+    static OkHttpClient client = new OkHttpClient.Builder()
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
+    private TextView sentenceView;
     public static boolean isShowingKeypoints = true;
     private ImageButton gobackBtn;
     private ImageButton startRecordBtn;
@@ -119,6 +141,7 @@ public class TranslateActivity extends AppCompatActivity {
             }
         });
 
+        sentenceView = findViewById(R.id.chatgpt_sentence);
         startRecordBtn = findViewById(R.id.record_btn);
         startRecordBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -126,6 +149,10 @@ public class TranslateActivity extends AppCompatActivity {
                 isRecording = !isRecording;
                 int record_btn_style = isRecording ? R.drawable.stop_record : R.drawable.start_record;
                 startRecordBtn.setImageResource(record_btn_style);
+
+                if (!isRecording) {
+                    callChatGPTAPI(new String[]{"Mom", "brownies", "kitchen"});
+                }
             }
         });
 
@@ -139,6 +166,15 @@ public class TranslateActivity extends AppCompatActivity {
 //                setupPreviewDisplayView();
 //                onPause();
 //                onResume();
+            }
+        });
+    }
+
+    public void addSubtitle(String sentence) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                sentenceView.setText(sentence);
             }
         });
     }
@@ -166,7 +202,7 @@ public class TranslateActivity extends AppCompatActivity {
         converter.setConsumer(processor);
         if (PermissionHelper.cameraPermissionsGranted(this)) {
             startCamera();
-            setupFrameProcessorCallback();
+//            setupFrameProcessorCallback();
         }
     }
 
@@ -274,5 +310,62 @@ public class TranslateActivity extends AppCompatActivity {
                                 processor.getVideoSurfaceOutput().setSurface(null);
                             }
                         });
+    }
+
+    private void callChatGPTAPI(String[] question) {
+        //okhttp
+//        messageList.add(new Message("Typing... ",Message.SENT_BY_BOT));
+
+        JSONObject jsonBody = new JSONObject();
+        try {
+            jsonBody.put("model", "gpt-3.5-turbo");
+
+            JSONArray messageArr = new JSONArray();
+            JSONObject obj = new JSONObject();
+            obj.put("role", "user");
+            obj.put("content", "Transfer these keywords extracted from ASL into a complete text sentence: " + Arrays.toString(question) + ". Provide only the sentence");
+            messageArr.put(obj);
+
+            jsonBody.put("messages", messageArr);
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
+        Request request = new Request.Builder()
+                .url("https://api.openai.com/v1/chat/completions")
+                .header("Authorization", "Bearer YOUR-API-KEY")
+                .post(body)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.d("Chatgpt Prompt", "Failed to load response due to " + e.getMessage());
+                addSubtitle(e.getMessage());
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    JSONObject jsonObject = null;
+                    try {
+                        jsonObject = new JSONObject(response.body().string());
+                        JSONArray jsonArray = jsonObject.getJSONArray("choices");
+                        String result = jsonArray.getJSONObject(0)
+                                .getJSONObject("message")
+                                .getString("content");
+                        Log.d("Chatgpt Prompt", result.trim());
+                        addSubtitle(result.trim());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Log.d("Chatgpt Prompt", "Failed to load response due to " + response.body().string());
+                    addSubtitle(response.body().string());
+                }
+            }
+        });
     }
 }
