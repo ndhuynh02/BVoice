@@ -27,6 +27,10 @@ import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.glutil.EglManager;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class TranslateActivity extends AppCompatActivity {
     private ImageButton gobackBtn;
     private ImageButton startRecordBtn;
@@ -75,12 +79,23 @@ public class TranslateActivity extends AppCompatActivity {
     // ApplicationInfo for retrieving metadata defined in the manifest.
     private ApplicationInfo applicationInfo;
 
-    int num_frame = 10; // Change this to the desired number of frames
-    int num_left_hand_landmarks = 21;
-    int num_coordinates = 3;
+    private int frameIndex = 0;
 
-    // Create the 3D array
-    float[][][] leftHandArray = new float[num_frame][num_left_hand_landmarks][num_coordinates];
+    // Define the dimensions for your array
+    int landmarkCount = 543; // Number of landmarks per frame
+    int coordinateCount = 3; // Number of coordinates (x, y, z) per landmark
+
+    // Initialize a list to store the landmarks
+//    List<List<List<float[]>>> holisticLandmarkList = new ArrayList<>();
+    List<List<List<Float>>> holisticLandmarkList = new ArrayList<>();
+    List<List<Float>> frameLandmarks = new ArrayList<>();
+
+    // check landmarks present
+    private boolean isPosePresent = false;
+    private boolean isLeftHandPresent = false;
+    private boolean isRightHandPresent = false;
+    private boolean isFacePresent = false;
+    private boolean isAllLandmarksPresent = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,12 +188,15 @@ public class TranslateActivity extends AppCompatActivity {
             setupFaceCallback();
         }
     }
+
     private void setupFaceCallback() {
         Log.d(TAG, "Setting up face callback");
         Runnable resetRunnable = new Runnable() {
             @Override
             public void run() {
+                isFacePresent = false;
                 Log.d(TAG, "no face landmarks");
+
             }
         };
 
@@ -188,17 +206,97 @@ public class TranslateActivity extends AppCompatActivity {
                 "face_landmarks",
                 (packet) -> {
                     try {
+                        // check landmarks presence
+                        isFacePresent = true;
+                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
+                        // handle packet
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        Log.d(TAG, "number of face landmarks: " + landmarksList.getLandmarkCount());
+                        if (isAllLandmarksPresent) {
+                            addLandMarksToList("face", landmarksList);
+                        }
 
+                        // inform handler that landmarks are present
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
                     } catch (Exception e) {
-                        Log.e(TAG, "accessing right_hand_landmarks failed: " + e.getMessage());
+                        Log.e(TAG, "accessing face_landmarks failed: " + e.getMessage());
                         e.printStackTrace();
                     }
                 });
+    }
+
+    private void addLandMarksToList(String landmarkType, LandmarkProto.NormalizedLandmarkList landmarksList) {
+        switch (landmarkType) {
+            case "face":
+                Log.d(TAG, "case face, frameLandmark size: " + frameLandmarks.size());
+                // only add when the number of landmarks for this frame is empty
+                if (frameLandmarks.size() == 0) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        List<Float> landmarkValues = new ArrayList<>();
+                        landmarkValues.add(landmark.getX());
+                        landmarkValues.add(landmark.getY());
+                        landmarkValues.add(landmark.getZ());
+                        frameLandmarks.add(landmarkValues);
+                    }
+                    Log.d(TAG, "added face landmarks, frameLandmark size: " + frameLandmarks.size());
+                }
+                break;
+
+            case "left":
+                // only add when the number of landmarks for this frame is 468
+                Log.d(TAG, "case left, frameLandmark size: " + frameLandmarks.size());
+                if (frameLandmarks.size() == 468) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        List<Float> landmarkValues = new ArrayList<>();
+                        landmarkValues.add(landmark.getX());
+                        landmarkValues.add(landmark.getY());
+                        landmarkValues.add(landmark.getZ());
+                        frameLandmarks.add(landmarkValues);
+                    }
+                    Log.d(TAG, "added left hand landmarks, frameLandmark size: " + frameLandmarks.size());
+                }
+                break;
+
+            case "pose":
+                // only add when the number of landmarks for this frame is 522
+                Log.d(TAG, "case pose, frameLandmark size: " + frameLandmarks.size());
+                if (frameLandmarks.size() == 489) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        List<Float> landmarkValues = new ArrayList<>();
+                        landmarkValues.add(landmark.getX());
+                        landmarkValues.add(landmark.getY());
+                        landmarkValues.add(landmark.getZ());
+                        frameLandmarks.add(landmarkValues);
+                    }
+                    Log.d(TAG, "added pose landmarks, frameLandmark size: " + frameLandmarks.size());
+                }
+                break;
+
+            case "right":
+                Log.d(TAG, "case right, frameLandmark size: " + frameLandmarks.size());
+                // Only add when the number of landmarks for this frame is 522
+                if (frameLandmarks.size() == 522) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        List<Float> landmarkValues = new ArrayList<>();
+                        landmarkValues.add(landmark.getX());
+                        landmarkValues.add(landmark.getY());
+                        landmarkValues.add(landmark.getZ());
+                        frameLandmarks.add(landmarkValues);
+                    }
+                    Log.d(TAG, "added right hand landmarks, frameLandmark size: " + frameLandmarks.size());
+                    holisticLandmarkList.add(frameLandmarks);
+                    frameIndex++;
+                    frameLandmarks = new ArrayList<>();
+                    Log.d(TAG, "finished adding landmarks for frame " + frameIndex);
+                }
+                break;
+
+            default:
+                Log.d(TAG + " " + "addLandmarkToList", "landmark type not found");
+                break;
+        }
     }
 
     private void setupRightHandCallback() {
@@ -206,6 +304,8 @@ public class TranslateActivity extends AppCompatActivity {
         Runnable resetRunnable = new Runnable() {
             @Override
             public void run() {
+                isRightHandPresent = false;
+                endWord();
                 Log.d(TAG, "no right hand landmarks");
             }
         };
@@ -216,10 +316,18 @@ public class TranslateActivity extends AppCompatActivity {
                 "right_hand_landmarks",
                 (packet) -> {
                     try {
+                        // check landmarks presence
+                        isRightHandPresent = true;
+                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
+                        // handle packet
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        Log.d(TAG, "number of right hand landmarks: " + landmarksList.getLandmarkCount());
+                        if (isAllLandmarksPresent) {
+                            addLandMarksToList("right", landmarksList);
+                        }
 
+                        // inform handler that landmarks are present
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
                     } catch (Exception e) {
@@ -229,11 +337,21 @@ public class TranslateActivity extends AppCompatActivity {
                 });
     }
 
+    private void endWord() {
+        Log.d(TAG, "endWord");
+        Log.d(TAG, "holisticLandmarkList size0: " + holisticLandmarkList.size());
+        Log.d(TAG, "holisticLandmarkList size1: " + holisticLandmarkList.get(0).size());
+        Log.d(TAG, "holisticLandmarkList size2: " + holisticLandmarkList.get(0).get(0).size());
+        holisticLandmarkList = new ArrayList<>();
+        frameLandmarks = new ArrayList<>();
+    }
+
     private void setupPoseCallback() {
         Log.d(TAG, "Setting up pose callback");
         Runnable resetRunnable = new Runnable() {
             @Override
             public void run() {
+                isPosePresent = false;
                 Log.d(TAG, "no pose landmarks");
             }
         };
@@ -244,9 +362,13 @@ public class TranslateActivity extends AppCompatActivity {
                 "pose_landmarks",
                 (packet) -> {
                     try {
+                        // check landmarks presence
+                        isPosePresent = true;
+                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        Log.d(TAG, "number of pose landmarks: " + landmarksList.getLandmarkCount());
+                        addLandMarksToList("pose", landmarksList);
 
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
@@ -262,6 +384,7 @@ public class TranslateActivity extends AppCompatActivity {
         Runnable resetRunnable = new Runnable() {
             @Override
             public void run() {
+                isLeftHandPresent = false;
                 Log.d(TAG, "no left hand landmarks");
             }
         };
@@ -272,9 +395,14 @@ public class TranslateActivity extends AppCompatActivity {
                 "left_hand_landmarks",
                 (packet) -> {
                     try {
+                        // check landmarks presence
+                        isLeftHandPresent = true;
+                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        Log.d(TAG, "number of left hand landmarks: " + landmarksList.getLandmarkCount());
+                        addLandMarksToList("left", landmarksList);
+
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
                     } catch (Exception e) {
