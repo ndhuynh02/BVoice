@@ -389,23 +389,14 @@ public class TranslateActivity extends AppCompatActivity {
     }
 
     private void endWord() {
-        for (String s : new String[]{"face", "left", "pose", "right"}) {
-            isAdded.put(s, false);
-        }
-
         Log.d(TAG, "endWord");
-        Log.d("Sequence size", String.valueOf(holisticLandmarkList.size()));
+        Log.d("Testing", "Sequence Size: " + String.valueOf(holisticLandmarkList.size()));
 
         String predictedWord = MainActivity.model.predict(holisticLandmarkList);
         Log.d("predicted word", predictedWord);
         keywords.add(predictedWord);
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                sentenceView.setText(keywords.toString());
-            }
-        });
+        addSubtitle(keywords.toString());
 
 //        Log.d(TAG, "holisticLandmarkList size0: " + holisticLandmarkList.size());
 //        Log.d(TAG, "holisticLandmarkList size1: " + holisticLandmarkList.get(0).size());
@@ -591,7 +582,7 @@ public class TranslateActivity extends AppCompatActivity {
         RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/chat/completions")
-                .header("Authorization", "Bearer YOUR-API-KEY")
+                .header("Authorization", "Bearer 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")
                 .post(body)
                 .build();
 
@@ -641,15 +632,38 @@ public class TranslateActivity extends AppCompatActivity {
 //                }
 //            }
             while (isRecording) {
-                while ( !(isAdded.get("face") && isAdded.get("left") && isAdded.get("pose") && isAdded.get("right")) ) {
-
-                }
-
+                Log.d("Testing", "hands: " + String.valueOf(isLeftHandPresent) + " " + String.valueOf(isRightHandPresent));
                 while (isLeftHandPresent || isRightHandPresent) {
+//                    while ( !(isAdded.get("face") && isAdded.get("left") && isAdded.get("pose") && isAdded.get("right")) ) {
+//
+//                    }
+
                     holisticLandmarkList.add(frameLandmarks);
+                    Log.d("Testing", "adding to sequence");
                     initWithNaN(frameLandmarks);
+
+                    try {
+                        Thread.sleep(250);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    if (holisticLandmarkList.size() > 200) {
+                        break;
+                    }
+
+//                    for (String s : new String[]{"face", "left", "pose", "right"}) {
+//                        isAdded.put(s, false);
+//                    }
                 }
-                endWord();
+                if (holisticLandmarkList.size() != 0 && !isLeftHandPresent && !isRightHandPresent) {
+                    endWord();
+                }
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
