@@ -85,7 +85,7 @@ public class PracticeFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_practice, container, false);
 
-        startCollectingKeypoints();
+//        startCollectingKeypoints();
 
         try {
             applicationInfo =
@@ -218,26 +218,26 @@ public class PracticeFragment extends Fragment {
                         });
     }
 
-    private void startCollectingKeypoints() {
-        CollectKeypointsRunnable runnable = new CollectKeypointsRunnable();
-        new Thread(runnable).start();
-    }
-
-    class CollectKeypointsRunnable implements Runnable {
-        @Override
-        public void run() {
-            for (int i = 0; i < 10; i++) {
-                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
-                String prediction = MainActivity.model.predict(inputArray);
-                Log.d("NHUTHAO_mainactivity", prediction);
-                keywords.add(prediction);
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
+//    private void startCollectingKeypoints() {
+//        CollectKeypointsRunnable runnable = new CollectKeypointsRunnable();
+//        new Thread(runnable).start();
+//    }
+//
+//    class CollectKeypointsRunnable implements Runnable {
+//        @Override
+//        public void run() {
+//            for (int i = 0; i < 10; i++) {
+//                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
+//                String prediction = MainActivity.model.predict(inputArray);
+//                Log.d("NHUTHAO_mainactivity", prediction);
+//                keywords.add(prediction);
+//
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//        }
+//    }
 }

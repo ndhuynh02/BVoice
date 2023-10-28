@@ -1,35 +1,24 @@
 package com.example.bvoice;
+
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
-import android.os.Build;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
 //import org.opencv.imgproc.Imgproc;
-import org.json.JSONObject;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 public class ModelClass {
@@ -39,7 +28,7 @@ public class ModelClass {
     // store all label
     private List<String> labelList;
 
-    private Map<Integer, String> p2s_map ;
+    private Map<Integer, String> p2s_map;
     private float[] output = new float[250];
 
     //initialize gpu on app
@@ -52,7 +41,6 @@ public class ModelClass {
         p2s_map = new HashMap<>();
 
 
-
         //load model
         interpreter = new Interpreter(loadModelFile(assetManager, modelPath), options);
 
@@ -63,7 +51,7 @@ public class ModelClass {
     }
 
 
-    private void readJsonFile(AssetManager assetManager,String filePath) throws IOException {
+    private void readJsonFile(AssetManager assetManager, String filePath) throws IOException {
 //         = getAssets();
         InputStream inputStream = assetManager.open(filePath);
 
@@ -95,8 +83,6 @@ public class ModelClass {
     }
 
 
-
-
     private ByteBuffer loadModelFile(AssetManager assetManager, String modelPath) throws IOException {
         //use to get description of file
         AssetFileDescriptor fileDescriptor = assetManager.openFd(modelPath);
@@ -104,7 +90,6 @@ public class ModelClass {
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
-
 
 
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
@@ -157,18 +142,30 @@ public class ModelClass {
 
         return maxIndex;
     }
-    public String predict(float[][][] input){
+
+    public static float[][][] convert(List<float[][]> inputList) {
+        float[][][] result = new float[inputList.size()][543][3];
+
+        for (int i = 0; i < inputList.size(); i++) {
+            float [][] item = inputList.get(i);
+            for (int j = 0; j < 543; j++) {
+                for (int k = 0; k < 3; k++) {
+                    result[i][j][k] = item[j][k];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public String predict(List<float[][]> inputList) {
+        float[][][] input = convert(inputList);
+
         float[] output = new float[250];
-        interpreter.run(input,output);
+        interpreter.run(input, output);
         int idx = findMaxIndex(output);
         return p2s_map.get(idx);
     }
-
-
-
-
-
-
 
 
 }
