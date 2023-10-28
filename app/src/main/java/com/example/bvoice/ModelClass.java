@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +111,30 @@ public class ModelClass {
         }
 
         return randomArray;
+    }
+
+    public static ArrayList<float[][]> generateRandomList(int height, int width, int channel) {
+        final float threshold = 0.3f;
+
+        ArrayList<float[][]> result = new ArrayList<>();
+        Random random = new Random();
+
+        // Fill the array with random float values
+        for (int i = 0; i < height; i++) {
+            float[][] randomArray = new float[width][channel];
+            for (int j = 0; j < width; j++) {
+                for (int k = 0; k < channel; k++) {
+                    if (random.nextFloat() >= threshold) {
+                        randomArray[j][k] = random.nextFloat();
+                    } else {
+//                        Log.d("NAN", "Exist nan in random array");
+                        randomArray[j][k] = Float.NaN;
+                    }
+                }
+            }
+            result.add(randomArray);
+        }
+        return result;
     }
 
     public static float[][] generateRandomArray(int height, int width) {

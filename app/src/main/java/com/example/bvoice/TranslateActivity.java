@@ -13,6 +13,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -130,6 +131,7 @@ public class TranslateActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_translate);
 
         initWithNaN(frameLandmarks);
@@ -191,15 +193,7 @@ public class TranslateActivity extends AppCompatActivity {
                     Log.d("Keyword list", keywords.toString());
                     keywords.clear();
                 }
-//                else {
-//                    for (int i = 0; i < 10; i++) {
-//                        float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
-//                        String prediction = model.predict(inputArray);
-//                        Log.d("NHUTHAO_mainactivity", prediction);
-//                        keywords.add(prediction);
-//                    }
                 startCollectingKeypoints();
-//                }
             }
         });
 
@@ -287,9 +281,9 @@ public class TranslateActivity extends AppCompatActivity {
                         // handle packet
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-//                        if (isAllLandmarksPresent) {
-                        addLandMarksToList("face", landmarksList);
-//                        }
+                        if (isRecording) {
+                            addLandMarksToList("face", landmarksList);
+                        }
 
                         // inform handler that landmarks are present
                         handler.removeCallbacksAndMessages(null);
@@ -374,9 +368,9 @@ public class TranslateActivity extends AppCompatActivity {
                         // handle packet
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-//                        if (isAllLandmarksPresent) {
-                        addLandMarksToList("right", landmarksList);
-//                        }
+                        if (isRecording) {
+                            addLandMarksToList("right", landmarksList);
+                        }
 
                         // inform handler that landmarks are present
                         handler.removeCallbacksAndMessages(null);
@@ -428,7 +422,9 @@ public class TranslateActivity extends AppCompatActivity {
 
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        addLandMarksToList("pose", landmarksList);
+                        if (isRecording) {
+                            addLandMarksToList("pose", landmarksList);
+                        }
 
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
@@ -462,7 +458,9 @@ public class TranslateActivity extends AppCompatActivity {
 
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        addLandMarksToList("left", landmarksList);
+                        if (isRecording) {
+                            addLandMarksToList("left", landmarksList);
+                        }
 
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
@@ -582,7 +580,7 @@ public class TranslateActivity extends AppCompatActivity {
         RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/chat/completions")
-                .header("Authorization", "Bearer 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")
+                .header("Authorization", "Bearer API-KEY")
                 .post(body)
                 .build();
 
@@ -619,18 +617,10 @@ public class TranslateActivity extends AppCompatActivity {
     class CollectKeypointsRunnable implements Runnable {
         @Override
         public void run() {
-//            while (isRecording) {
-//                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
-//                String prediction = MainActivity.model.predict(inputArray);
-//                Log.d("NHUTHAO_mainactivity", prediction);
-//                keywords.add(prediction);
-//
-//                try {
-//                    Thread.sleep(1000);
-//                } catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
+            nhNgan();
+        }
+
+        private void hayade() {
             while (isRecording) {
                 Log.d("Testing", "hands: " + String.valueOf(isLeftHandPresent) + " " + String.valueOf(isRightHandPresent));
                 while (isLeftHandPresent || isRightHandPresent) {
@@ -638,19 +628,24 @@ public class TranslateActivity extends AppCompatActivity {
 //
 //                    }
 
-                    holisticLandmarkList.add(frameLandmarks);
-                    Log.d("Testing", "adding to sequence");
-                    initWithNaN(frameLandmarks);
+                    if (!isAllNaN(frameLandmarks)) {
+                        Log.v("Frame Lamdmarks", Arrays.deepToString(frameLandmarks));
+                        holisticLandmarkList.add(frameLandmarks);
+                        Log.d("Testing", "adding to sequence");
+                        initWithNaN(frameLandmarks);
+                    }
+
+                    if (holisticLandmarkList.size() > 10) {
+                        break;
+                    }
 
                     try {
-                        Thread.sleep(250);
+                        Thread.sleep(300);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
 
-                    if (holisticLandmarkList.size() > 200) {
-                        break;
-                    }
+
 
 //                    for (String s : new String[]{"face", "left", "pose", "right"}) {
 //                        isAdded.put(s, false);
@@ -661,6 +656,75 @@ public class TranslateActivity extends AppCompatActivity {
                 }
                 try {
                     Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        public boolean isAllNaN(float[][] array) {
+            for (int i = 0; i < array.length; i++) {
+                for (int j = 0; j < array[i].length; j++) {
+                    if (!Float.isNaN(array[i][j])) {
+                        return false; // Found a non-NaN value
+                    }
+                }
+            }
+            return true; // All values are NaN
+        }
+
+        private void nhNgan() {
+            final int HAND_NOT_FOUND_THRESHOLD = 25;
+            final int FRAME_TO_PRED = 5;
+            final long delay = 200;
+            int hand_flag = 0;
+
+            while (isRecording) {
+                long start_time = System.currentTimeMillis();
+
+                if (!isRightHandPresent && !isLeftHandPresent) {    // no hands are detected
+                    if (hand_flag > HAND_NOT_FOUND_THRESHOLD || hand_flag == -1) {
+                        hand_flag = -1;
+                    } else {
+                        hand_flag += 1;
+                    }
+                } else {    // 1 of 2 hands in screen
+                    hand_flag = 0;
+
+                    if (!isAllNaN(frameLandmarks)) {    // only add if there are values
+                        holisticLandmarkList.add(frameLandmarks);
+                        initWithNaN(frameLandmarks);
+                    }
+                }
+
+                if (hand_flag >= HAND_NOT_FOUND_THRESHOLD) {
+                    if (holisticLandmarkList.size() > FRAME_TO_PRED) {
+//                        Log.d("Sequence Size", String.valueOf(holisticLandmarkList.size()));
+                        endWord();
+                    }
+                }
+
+                long elapsed_time = System.currentTimeMillis() - start_time;
+                if (elapsed_time < delay) {
+                    try {
+                        Log.v("Elapsed_time", String.valueOf(elapsed_time));
+                        Thread.sleep(delay - elapsed_time);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+
+        private void randomGenerate() {
+            while (isRecording) {
+                ArrayList<float[][]> inputArray = ModelClass.generateRandomList(25, 543, 3);
+                String prediction = MainActivity.model.predict(inputArray);
+                Log.d("NHUTHAO_mainactivity", prediction);
+                keywords.add(prediction);
+
+                try {
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
