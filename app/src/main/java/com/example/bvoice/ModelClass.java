@@ -1,4 +1,5 @@
 package com.example.bvoice;
+
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.os.Build;
@@ -39,7 +40,7 @@ public class ModelClass {
     // store all label
     private List<String> labelList;
 
-    private Map<Integer, String> p2s_map ;
+    private Map<Integer, String> p2s_map;
     private float[] output = new float[250];
 
     //initialize gpu on app
@@ -52,7 +53,6 @@ public class ModelClass {
         p2s_map = new HashMap<>();
 
 
-
         //load model
         interpreter = new Interpreter(loadModelFile(assetManager, modelPath), options);
 
@@ -63,7 +63,7 @@ public class ModelClass {
     }
 
 
-    private void readJsonFile(AssetManager assetManager,String filePath) throws IOException {
+    private void readJsonFile(AssetManager assetManager, String filePath) throws IOException {
 //         = getAssets();
         InputStream inputStream = assetManager.open(filePath);
 
@@ -95,8 +95,6 @@ public class ModelClass {
     }
 
 
-
-
     private ByteBuffer loadModelFile(AssetManager assetManager, String modelPath) throws IOException {
         //use to get description of file
         AssetFileDescriptor fileDescriptor = assetManager.openFd(modelPath);
@@ -104,7 +102,6 @@ public class ModelClass {
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
-
 
 
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
@@ -127,17 +124,28 @@ public class ModelClass {
         return randomArray;
     }
 
-    public static float[][] generateRandomArray(int height, int width) {
-        float[][] randomArray = new float[height][width];
+    public static ArrayList<float[][]> generateRandomList(int height, int width, int channel) {
+        final float threshold = 0.3f;
+
+        ArrayList<float[][]> result = new ArrayList<>();
         Random random = new Random();
 
         // Fill the array with random float values
         for (int i = 0; i < height; i++) {
+            float[][] randomArray = new float[width][channel];
             for (int j = 0; j < width; j++) {
-                randomArray[i][j] = random.nextFloat();
+                for (int k = 0; k < channel; k++) {
+                    if (random.nextFloat() >= threshold) {
+                        randomArray[j][k] = random.nextFloat();
+                    } else {
+//                        Log.d("NAN", "Exist nan in random array");
+                        randomArray[j][k] = Float.NaN;
+                    }
+                }
             }
+            result.add(randomArray);
         }
-        return randomArray;
+        return result;
     }
 
     private static int findMaxIndex(float[] array) {
@@ -157,18 +165,18 @@ public class ModelClass {
 
         return maxIndex;
     }
-    public String predict(float[][][] input){
+
+    public String predict(ArrayList<float[][]> inputSequence) {
+        float[][][] input = new float[inputSequence.size()][543][3];
+        for (int i = 0; i < inputSequence.size(); i++){
+            input[i] = inputSequence.get(i);
+        }
+
         float[] output = new float[250];
-        interpreter.run(input,output);
+        interpreter.run(input, output);
         int idx = findMaxIndex(output);
         return p2s_map.get(idx);
     }
-
-
-
-
-
-
 
 
 }

@@ -5,6 +5,9 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Size;
 import android.view.SurfaceHolder;
@@ -26,6 +29,7 @@ import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.glutil.EglManager;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -34,6 +38,9 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
@@ -46,12 +53,15 @@ import okhttp3.Response;
 
 public class TranslateActivity extends AppCompatActivity {
     private ArrayList<String> keywords = new ArrayList<>();
+    private Map<String, Boolean> isPresent = new HashMap<>();
+    private Map<String, ArrayList<ArrayList<Float>>> frameKeypoints = new HashMap<>();
     public static final MediaType JSON
             = MediaType.get("application/json; charset=utf-8");
     static OkHttpClient client = new OkHttpClient.Builder()
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
     private TextView sentenceView;
+    private TextView promptingView;
     public static boolean isShowingKeypoints = true;
     private ImageButton gobackBtn;
     private ImageButton startRecordBtn;
@@ -143,6 +153,19 @@ public class TranslateActivity extends AppCompatActivity {
             }
         });
 
+        isPresent.put("face", false);
+        isPresent.put("pose", false);
+        isPresent.put("right_hand", false);
+        isPresent.put("left_hand", false);
+
+        frameKeypoints.put("face", new ArrayList<>());
+        frameKeypoints.put("left_hand", new ArrayList<>());
+        frameKeypoints.put("right_hand", new ArrayList<>());
+        frameKeypoints.put("pose", new ArrayList<>());
+
+        promptingView = findViewById(R.id.prompting_text_view);
+        promptingView.setVisibility(View.GONE);
+
         sentenceView = findViewById(R.id.chatgpt_sentence);
         startRecordBtn = findViewById(R.id.record_btn);
         startRecordBtn.setOnClickListener(new View.OnClickListener() {
@@ -153,6 +176,7 @@ public class TranslateActivity extends AppCompatActivity {
                 startRecordBtn.setImageResource(record_btn_style);
 
                 if (!isRecording) {
+                    promptingView.setVisibility(View.VISIBLE);
                     callChatGPTAPI(keywords);
                     Log.d("Keyword list", keywords.toString());
                     keywords.clear();
@@ -192,6 +216,7 @@ public class TranslateActivity extends AppCompatActivity {
             @Override
             public void run() {
                 sentenceView.setText(sentence);
+                promptingView.setVisibility(View.GONE);
             }
         });
     }
@@ -390,16 +415,74 @@ public class TranslateActivity extends AppCompatActivity {
         @Override
         public void run() {
             while (isRecording) {
-                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
+                ArrayList<float[][]> inputArray = ModelClass.generateRandomList(25, 543, 3);
                 String prediction = MainActivity.model.predict(inputArray);
                 Log.d("NHUTHAO_mainactivity", prediction);
                 keywords.add(prediction);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        sentenceView.setText(keywords.toString());
+                    }
+                });
+
 
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+            }
+        }
+    }
+
+    class GetKeypointsFromEachPartRunnable implements Runnable {
+        String landmarkType = "";
+
+        GetKeypointsFromEachPartRunnable(String landmarkType) {
+            this.landmarkType = landmarkType;
+        }
+
+        @Override
+        public void run() {
+            Log.d(TAG, "Setting up left hand callback");
+            Runnable resetRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    isPresent.put(landmarkType, false);
+                    Log.d(TAG, "no " + landmarkType +" landmarks");
+                }
+            };
+
+            Handler handler = new Handler(Looper.getMainLooper());
+
+            switch (landmarkType) {
+                case "face":
+                case "right_hand":
+                case "left_hand":
+                case "pose":
+                    processor.addPacketCallback(landmarkType + "_landmarks", packet -> {
+                    byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        try {
+                            isPresent.put(landmarkType, true);
+                            LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                            for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                                float [] landmarkValue = {landmark.getX(), landmark.getY(), landmark.getZ()};
+
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                        // inform handler that landmarks are present
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    });
+
+                default:
+                    Log.d(TAG + " addLandmarkToList", "landmark type `" + landmarkType + "` not found");
+                    break;
             }
         }
     }

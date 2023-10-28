@@ -227,7 +227,7 @@ public class PracticeFragment extends Fragment {
         @Override
         public void run() {
             for (int i = 0; i < 10; i++) {
-                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
+                ArrayList<float[][]> inputArray = ModelClass.generateRandomList(25, 543, 3);
                 String prediction = MainActivity.model.predict(inputArray);
                 Log.d("NHUTHAO_mainactivity", prediction);
                 keywords.add(prediction);
