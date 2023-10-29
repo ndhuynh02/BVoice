@@ -164,9 +164,33 @@ public class ModelClass {
         return p2s_map.get(idx);
     }
 
+    private static float[][][] convert(List<List<List<Float>>> inputList) {
+        int size1 = inputList.size();
+        float[][][] result = new float[size1][][];
 
+        for (int i = 0; i < size1; i++) {
+            List<List<Float>> innerList1 = inputList.get(i);
+            int size2 = innerList1.size();
+            result[i] = new float[size2][];
 
+            for (int j = 0; j < size2; j++) {
+                List<Float> innerList2 = innerList1.get(j);
+                int size3 = innerList2.size();
+                result[i][j] = new float[size3];
 
+                for (int k = 0; k < size3; k++) {
+                    result[i][j][k] = innerList2.get(k);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public String predict(List<List<List<Float>>> inputList) {
+        float [][][] input = convert(inputList);
+        return predict(input);
+    }
 
 
 

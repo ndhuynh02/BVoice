@@ -176,15 +176,16 @@ public class TranslateActivity extends AppCompatActivity {
                     callChatGPTAPI(keywords);
                     Log.d("Keyword list", keywords.toString());
                     keywords.clear();
-                } else {
-//                    for (int i = 0; i < 10; i++) {
-//                        float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
-//                        String prediction = model.predict(inputArray);
-//                        Log.d("NHUTHAO_mainactivity", prediction);
-//                        keywords.add(prediction);
-//                    }
-                    startCollectingKeypoints();
                 }
+//                else {
+////                    for (int i = 0; i < 10; i++) {
+////                        float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
+////                        String prediction = model.predict(inputArray);
+////                        Log.d("NHUTHAO_mainactivity", prediction);
+////                        keywords.add(prediction);
+////                    }
+//                    startCollectingKeypoints();
+//                }
             }
         });
 
@@ -265,7 +266,7 @@ public class TranslateActivity extends AppCompatActivity {
                         // handle packet
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        if (isAllLandmarksPresent) {
+                        if (isAllLandmarksPresent && isRecording) {
                             addLandMarksToList("face", landmarksList);
                         }
 
@@ -375,7 +376,7 @@ public class TranslateActivity extends AppCompatActivity {
                         // handle packet
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        if (isAllLandmarksPresent) {
+                        if (isAllLandmarksPresent && isRecording) {
                             addLandMarksToList("right", landmarksList);
                         }
 
@@ -391,11 +392,19 @@ public class TranslateActivity extends AppCompatActivity {
 
     private void endWord() {
         Log.d(TAG, "endWord");
-        Log.d(TAG, "holisticLandmarkList size0: " + holisticLandmarkList.size());
-        Log.d(TAG, "holisticLandmarkList size1: " + holisticLandmarkList.get(0).size());
-        Log.d(TAG, "holisticLandmarkList size2: " + holisticLandmarkList.get(0).get(0).size());
-        holisticLandmarkList = new ArrayList<>();
-        frameLandmarks = new ArrayList<>();
+
+        if (holisticLandmarkList.size() > 0) {
+            String predictedWord = MainActivity.model.predict(holisticLandmarkList);
+            keywords.add(predictedWord);
+
+            addSubtitle(keywords.toString());
+        }
+//
+//        Log.d(TAG, "holisticLandmarkList size0: " + holisticLandmarkList.size());
+//        Log.d(TAG, "holisticLandmarkList size1: " + holisticLandmarkList.get(0).size());
+//        Log.d(TAG, "holisticLandmarkList size2: " + holisticLandmarkList.get(0).get(0).size());
+        holisticLandmarkList.clear();
+        frameLandmarks.clear();
     }
 
     private void setupPoseCallback() {
@@ -420,7 +429,10 @@ public class TranslateActivity extends AppCompatActivity {
 
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        addLandMarksToList("pose", landmarksList);
+
+                        if (isAllLandmarksPresent && isRecording) {
+                            addLandMarksToList("pose", landmarksList);
+                        }
 
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
@@ -453,7 +465,10 @@ public class TranslateActivity extends AppCompatActivity {
 
                         byte[] protoBytes = PacketGetter.getProtoBytes(packet);
                         LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
-                        addLandMarksToList("left", landmarksList);
+
+                        if (isAllLandmarksPresent && isRecording) {
+                            addLandMarksToList("left", landmarksList);
+                        }
 
                         handler.removeCallbacksAndMessages(null);
                         handler.postDelayed(resetRunnable, 1000L);
@@ -573,7 +588,7 @@ public class TranslateActivity extends AppCompatActivity {
         RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/chat/completions")
-                .header("Authorization", "Bearer YOUR-API-KEY")
+                .header("Authorization", "Bearer API-KEY")
                 .post(body)
                 .build();
 
