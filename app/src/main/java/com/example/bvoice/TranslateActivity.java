@@ -34,9 +34,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -591,12 +593,12 @@ public class TranslateActivity extends AppCompatActivity {
 
             jsonBody.put("messages", messageArr);
 
-
         } catch (JSONException e) {
             e.printStackTrace();
         }
         RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
-        String authorization = readAuthorizationFromFile("authorization.txt");
+
+        String authorization = "YOUR_API_KEY";
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/chat/completions")
                 .header("Authorization", authorization)
