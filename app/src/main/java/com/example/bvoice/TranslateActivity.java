@@ -674,7 +674,7 @@ public class TranslateActivity extends AppCompatActivity {
         }
 
         private void nhNgan() {
-            final int HAND_NOT_FOUND_THRESHOLD = 25;
+            final int HAND_NOT_FOUND_THRESHOLD = 10;
             final int FRAME_TO_PRED = 5;
             final long delay = 200;
             int hand_flag = 0;
@@ -683,11 +683,11 @@ public class TranslateActivity extends AppCompatActivity {
                 long start_time = System.currentTimeMillis();
 
                 if (!isRightHandPresent && !isLeftHandPresent) {    // no hands are detected
-                    if (hand_flag > HAND_NOT_FOUND_THRESHOLD || hand_flag == -1) {
-                        hand_flag = -1;
-                    } else {
+//                    if (hand_flag > HAND_NOT_FOUND_THRESHOLD || hand_flag == -1) {
+//                        hand_flag = -1;
+//                    } else {
                         hand_flag += 1;
-                    }
+//                    }
                 } else {    // 1 of 2 hands in screen
                     hand_flag = 0;
 
@@ -698,6 +698,7 @@ public class TranslateActivity extends AppCompatActivity {
                 }
 
                 if (hand_flag >= HAND_NOT_FOUND_THRESHOLD) {
+                    hand_flag = -1;
                     if (holisticLandmarkList.size() > FRAME_TO_PRED) {
 //                        Log.d("Sequence Size", String.valueOf(holisticLandmarkList.size()));
                         endWord();

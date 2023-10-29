@@ -8,6 +8,8 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
 import android.view.LayoutInflater;
@@ -15,10 +17,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import com.example.bvoice.MainActivity;
 import com.example.bvoice.ModelClass;
+import com.example.bvoice.PracticeActivity;
 import com.example.bvoice.R;
 import com.example.bvoice.TranslateActivity;
 import com.google.mediapipe.components.CameraHelper;
@@ -26,16 +31,24 @@ import com.google.mediapipe.components.CameraXPreviewHelper;
 import com.google.mediapipe.components.ExternalTextureConverter;
 import com.google.mediapipe.components.FrameProcessor;
 import com.google.mediapipe.components.PermissionHelper;
+import com.google.mediapipe.formats.proto.LandmarkProto;
 import com.google.mediapipe.framework.AndroidAssetUtil;
+import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.glutil.EglManager;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class PracticeFragment extends Fragment {
+
+    private ImageView checkSign;
     private ArrayList<String> keywords = new ArrayList<>();
     private ImageButton gobackBtn;
     private ImageButton startRecordBtn;
-    private boolean isRecording = false;
+    private boolean isRecording = true;
     private ImageButton flipCamera;
     private boolean cameraFacingFront = true;
     private static final String TAG = "PracticeFragment";
@@ -80,12 +93,39 @@ public class PracticeFragment extends Fragment {
     // ApplicationInfo for retrieving metadata defined in the manifest.
     private ApplicationInfo applicationInfo;
 
+    private int frameIndex = 0;
+
+    // Define the dimensions for your array
+    int landmarkCount = 543; // Number of landmarks per frame
+    int coordinateCount = 3; // Number of coordinates (x, y, z) per landmark
+
+    // Initialize a list to store the landmarks
+//    List<List<List<float[]>>> holisticLandmarkList = new ArrayList<>();
+    List<float[][]> holisticLandmarkList = new ArrayList<float[][]>();
+    //    List<List<Float>> frameLandmarks = new ArrayList<>();
+    float[][] frameLandmarks = new float[landmarkCount][coordinateCount];
+
+    // check landmarks present
+    private boolean isPosePresent = false;
+    private boolean isLeftHandPresent = false;
+    private boolean isRightHandPresent = false;
+    private boolean isFacePresent = false;
+//    private boolean isAllLandmarksPresent = false;
+
+    private Map<String, Boolean> isAdded = new HashMap<>();
+
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_practice, container, false);
-
+        requireActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 //        startCollectingKeypoints();
+
+        initWithNaN(frameLandmarks);
+        for (String s : new String[]{"face", "left", "pose", "right"}) {
+            isAdded.put(s, false);
+        }
 
         try {
             applicationInfo =
@@ -117,8 +157,24 @@ public class PracticeFragment extends Fragment {
 
         PermissionHelper.checkAndRequestCameraPermissions(getActivity());
 
+        checkSign = view.findViewById(R.id.check_sign);
+        checkSign.setVisibility(View.GONE);
+
+        startCollectingKeypoints();
+
         // Inflate the layout for this fragment
         return view;
+    }
+
+    private void startCollectingKeypoints() {
+        CollectKeypointsRunnable runnable = new CollectKeypointsRunnable();
+        new Thread(runnable).start();
+    }
+
+    private void initWithNaN(float[][] frameLandmarks) {
+        // Fill each row with NaN
+        for (float[] row : frameLandmarks)
+            Arrays.fill(row, Float.NaN);
     }
 
     @Override
@@ -130,6 +186,10 @@ public class PracticeFragment extends Fragment {
         converter.setConsumer(processor);
         if (PermissionHelper.cameraPermissionsGranted(getActivity())) {
             startCamera();
+            setupLeftHandCallback();
+            setupRightHandCallback();
+            setupPoseCallback();
+            setupFaceCallback();
         }
     }
 
@@ -218,26 +278,282 @@ public class PracticeFragment extends Fragment {
                         });
     }
 
-//    private void startCollectingKeypoints() {
-//        CollectKeypointsRunnable runnable = new CollectKeypointsRunnable();
-//        new Thread(runnable).start();
-//    }
+    class CollectKeypointsRunnable implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                while (isRightHandPresent || isLeftHandPresent) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            checkSign.setVisibility(View.GONE);
+                        }
+                    });
+
+                    if (!isAllNaN(frameLandmarks)) {
+                        Log.v("Frame Lamdmarks", Arrays.deepToString(frameLandmarks));
+                        holisticLandmarkList.add(frameLandmarks);
+                        Log.d("Testing", "adding to sequence");
+                        initWithNaN(frameLandmarks);
+                    }
+
+                    if (holisticLandmarkList.size() > 10) {
+                        break;
+                    }
+
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (holisticLandmarkList.size() != 0 && !isLeftHandPresent && !isRightHandPresent) {
+                    endWord();
+                }
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        private void endWord() {
+            Log.d(TAG, "endWord");
+            Log.d("Testing", "Sequence Size: " + String.valueOf(holisticLandmarkList.size()));
+
+            String predictedWord = MainActivity.model.predict(holisticLandmarkList);
+            Log.d("predicted word", predictedWord);
+
+            // TODO: check if predictedWord is true
+//            if (predictedWord.equals(PracticeActivity.word)) {
 //
-//    class CollectKeypointsRunnable implements Runnable {
-//        @Override
-//        public void run() {
-//            for (int i = 0; i < 10; i++) {
-//                float[][][] inputArray = ModelClass.generateRandomArray(25, 543, 3);
-//                String prediction = MainActivity.model.predict(inputArray);
-//                Log.d("NHUTHAO_mainactivity", prediction);
-//                keywords.add(prediction);
-//
-//                try {
-//                    Thread.sleep(1000);
-//                } catch (InterruptedException e) {
-//                    throw new RuntimeException(e);
-//                }
 //            }
-//        }
-//    }
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    checkSign.setVisibility(View.VISIBLE);
+                }
+            });
+
+
+//        Log.d(TAG, "holisticLandmarkList size0: " + holisticLandmarkList.size());
+//        Log.d(TAG, "holisticLandmarkList size1: " + holisticLandmarkList.get(0).size());
+//        Log.d(TAG, "holisticLandmarkList size2: " + holisticLandmarkList.get(0).get(0).size());
+            holisticLandmarkList.clear();
+            initWithNaN(frameLandmarks);
+        }
+
+        public boolean isAllNaN(float[][] array) {
+            for (int i = 0; i < array.length; i++) {
+                for (int j = 0; j < array[i].length; j++) {
+                    if (!Float.isNaN(array[i][j])) {
+                        return false; // Found a non-NaN value
+                    }
+                }
+            }
+            return true; // All values are NaN
+        }
+
+    }
+
+    private void setupLeftHandCallback() {
+        Log.d(TAG, "Setting up left hand callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+                isLeftHandPresent = false;
+                isAdded.put("left", true);
+                Log.d(TAG, "no left hand landmarks");
+            }
+        };
+
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        processor.addPacketCallback(
+                "left_hand_landmarks",
+                (packet) -> {
+                    try {
+                        // check landmarks presence
+                        isLeftHandPresent = true;
+//                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                        if (isRecording && (isLeftHandPresent || isRightHandPresent)) {
+                            addLandMarksToList("left", landmarksList);
+                        }
+
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing left_hand_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void setupFaceCallback() {
+        Log.d(TAG, "Setting up face callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+//                isFacePresent = false;
+                isAdded.put("face", true);
+                Log.d(TAG, "no face landmarks");
+
+            }
+        };
+
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        processor.addPacketCallback(
+                "face_landmarks",
+                (packet) -> {
+                    try {
+                        // check landmarks presence
+//                        isFacePresent = true;
+//                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
+                        // handle packet
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                        if (isRecording && (isLeftHandPresent || isRightHandPresent)) {
+                            addLandMarksToList("face", landmarksList);
+                        }
+
+                        // inform handler that landmarks are present
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing face_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void setupRightHandCallback() {
+        Log.d(TAG, "Setting up right hand callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+                isRightHandPresent = false;
+                isAdded.put("right", true);
+                Log.d(TAG, "no right hand landmarks");
+            }
+        };
+
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        processor.addPacketCallback(
+                "right_hand_landmarks",
+                (packet) -> {
+                    try {
+                        // check landmarks presence
+                        isRightHandPresent = true;
+//                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
+                        // handle packet
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                        if (isRecording && (isLeftHandPresent || isRightHandPresent)) {
+                            addLandMarksToList("right", landmarksList);
+                        }
+
+                        // inform handler that landmarks are present
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing right_hand_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void setupPoseCallback() {
+        Log.d(TAG, "Setting up pose callback");
+        Runnable resetRunnable = new Runnable() {
+            @Override
+            public void run() {
+//                isPosePresent = false;
+                isAdded.put("pose", true);
+                Log.d(TAG, "no pose landmarks");
+            }
+        };
+
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        processor.addPacketCallback(
+                "pose_landmarks",
+                (packet) -> {
+                    try {
+                        // check landmarks presence
+//                        isPosePresent = true;
+//                        isAllLandmarksPresent = isLeftHandPresent && isRightHandPresent && isFacePresent && isPosePresent;
+
+                        byte[] protoBytes = PacketGetter.getProtoBytes(packet);
+                        LandmarkProto.NormalizedLandmarkList landmarksList = LandmarkProto.NormalizedLandmarkList.parser().parseFrom(protoBytes);
+                        if (isRecording && (isLeftHandPresent || isRightHandPresent)) {
+                            addLandMarksToList("pose", landmarksList);
+                        }
+
+                        handler.removeCallbacksAndMessages(null);
+                        handler.postDelayed(resetRunnable, 1000L);
+                    } catch (Exception e) {
+                        Log.e(TAG, "accessing left_hand_landmarks failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                });
+    }
+
+    private void addLandMarksToList(String landmarkType, LandmarkProto.NormalizedLandmarkList landmarksList) {
+        switch (landmarkType) {
+            case "face":
+                for (int i = 0; i < 468; i++) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        frameLandmarks[i][0] = landmark.getX();
+                        frameLandmarks[i][1] = landmark.getY();
+                        frameLandmarks[i][2] = landmark.getZ();
+                    }
+                }
+                break;
+
+            case "left":
+                for (int i = 468; i < 489; i++) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        frameLandmarks[i][0] = landmark.getX();
+                        frameLandmarks[i][1] = landmark.getY();
+                        frameLandmarks[i][2] = landmark.getZ();
+                    }
+                }
+                break;
+
+            case "pose":
+                for (int i = 489; i < 522; i++) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        frameLandmarks[i][0] = landmark.getX();
+                        frameLandmarks[i][1] = landmark.getY();
+                        frameLandmarks[i][2] = landmark.getZ();
+                    }
+                }
+                break;
+
+            case "right":
+                for (int i = 522; i < 543; i++) {
+                    for (LandmarkProto.NormalizedLandmark landmark : landmarksList.getLandmarkList()) {
+                        frameLandmarks[i][0] = landmark.getX();
+                        frameLandmarks[i][1] = landmark.getY();
+                        frameLandmarks[i][2] = landmark.getZ();
+                    }
+                }
+                break;
+
+            default:
+                Log.d(TAG + " " + "addLandmarkToList", "landmark type not found");
+                break;
+        }
+        isAdded.put(landmarkType, true);
+    }
+
+
 }
