@@ -33,6 +33,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -559,9 +562,22 @@ public class TranslateActivity extends AppCompatActivity {
                         });
     }
 
+    private static String readAuthorizationFromFile(String filePath) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line = reader.readLine();
+            if (line != null) {
+                return line.trim(); // Trim any leading/trailing whitespace
+            } else {
+                // Handle the case where the file is empty or doesn't exist
+                throw new IOException("Authorization file is empty or not found.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return filePath;
+    }
+
     private void callChatGPTAPI(ArrayList<String> question) {
-        //okhttp
-//        messageList.add(new Message("Typing... ",Message.SENT_BY_BOT));
 
         JSONObject jsonBody = new JSONObject();
         try {
@@ -580,9 +596,10 @@ public class TranslateActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
+        String authorization = readAuthorizationFromFile("authorization.txt");
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/chat/completions")
-                .header("Authorization", "Bearer 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")
+                .header("Authorization", authorization)
                 .post(body)
                 .build();
 
