@@ -582,7 +582,7 @@ public class TranslateActivity extends AppCompatActivity {
         RequestBody body = RequestBody.create(jsonBody.toString(), JSON);
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/chat/completions")
-                .header("Authorization", "Bearer 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")
+                .header("Authorization", "Bearer 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")
                 .post(body)
                 .build();
 
